@@ -1,31 +1,19 @@
-# Witch Game 0.3 — Witch Home (Xogot / Godot 4.x)
+# Witch Game v0.4 — Dark Forest Art Pass
 
-A playable 2.5D brawler/RPG prototype for iPad. The starting screen is a **cold, dark forest** with a **warmly lit witch cottage** at its centre. Walk to the door and interact to enter a **warm interior**, then interact with the exit to return to the forest. The existing slime, magic, health, XP and jump mechanics remain.
+Godot 4 / Xogot iPad playable 2.5D witch adventure.
+
+## v0.4 artwork
+- New dark forest environment in `art/forest_v04.svg`: crooked trunks and branches, moonlit cold mist, mossy ground, textured witch cottage, roof and window details.
+- New warm interior environment in `art/interior_v04.svg`: timber beams, detailed shelves/books, large fireplace and cauldron.
+- Smooth radial glow texture in `art/staff_glow.svg` following the witch's staff.
+- All three are **vector-painted prototype art** rather than photorealistic raster illustrations. The next art pass can replace them with hand-painted high-resolution PNGs.
+- Current witch motion is procedural idle / walk / jump, not hand-drawn sprite-sheet frames.
 
 ## Controls
+iPad: four arrows to move, JUMP to jump, CAST for green magic, USE at the door to enter/exit.
+Keyboard: WASD/arrows, Space to jump, J to cast, E to use.
 
-| iPad | Keyboard | Action |
-| --- | --- | --- |
-| UP / DOWN / LEFT / RIGHT | WASD or arrows | Walk around the arena |
-| JUMP | Space | Jump with separate ground depth |
-| CAST | J | Shoot green magic |
-| USE | E | Enter/exit the cottage near the door |
+## Testing
+Import the `main` branch of `https://github.com/ZakharMig/Witch-game` in Xogot as a fresh project (or update its imported files). Walk to the cottage door and tap USE, then walk to the interior door and tap USE to return. Verify movement in all four directions, jump and spell. Check rendering of SVG scenery and staff light in Godot 4.7.
 
-**Important:** Release USE between transitions. The entrance trigger is near the front of the door on the forest floor; inside, approach the centre exit door.
-
-## Character animation in this prototype
-
-The existing illustrated witch PNG is animated **procedurally** in code:
-* `idle`: breathing and gentle sway;
-* `walk`: cyclic bobbing and tilting;
-* `jump`: squash/stretch with the independently simulated jump height.
-
-This is deliberately a **first animation pass**, **not** a finished hand-drawn 4–8-frame sprite sheet. Replacing these with polished hand-drawn sprite animations is a later art task.
-
-## Visuals
-
-Environment, cabin, interior, glow, fog and furniture are stylized primitives drawn in `game.gd`. These are functional art placeholders for the approved dark cinematic forest + warm-light direction, not final painted backgrounds. Staff glow uses translucent circles, not dynamic lighting/shadows.
-
-## Testing on iPad
-
-Import `https://github.com/ZakharMig/Witch-game` as a new project in Xogot (main branch) and run. Test movement in 4 directions, jumping, spells, USE at the cottage door, and USE inside to exit. If Xogot asks to update Godot format, keep a backup. The last known-good v0.2 was saved in branch `backup/v0.2-working`.
+The last known working v0.3 remains available in the `backup/v0.3-working` branch; if SVG import is unsupported in Xogot or a parser error appears, revert to that backup while troubleshooting.
