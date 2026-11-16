@@ -1,6 +1,6 @@
 extends Node2D
 
-# Witch Game v0.2 — four-direction brawler arena + independent jump.
+# Witch Game v0.4 — illustrated forest and witch cottage (Godot 4 / Xogot).
 # The witch sprite is original SVG vector artwork and can later be swapped
 # for hand-drawn frame animations.
 const VIEW_W := 1280.0
@@ -15,6 +15,9 @@ const GRAVITY := 1300.0
 const CAST_SPEED := 680.0
 const CAST_RANGE_Y := 48.0
 const WITCH_TEXTURE: Texture2D = preload("res://art/witch.png")
+const FOREST_ART: Texture2D = preload("res://art/forest_v04.svg")
+const INTERIOR_ART: Texture2D = preload("res://art/interior_v04.svg")
+const STAFF_GLOW: Texture2D = preload("res://art/staff_glow.svg")
 
 var witch_position := Vector2(260, 550) # Ground coordinates (X, depth).
 var jump_height := 0.0
@@ -215,8 +218,10 @@ func _draw_witch() -> void:
     draw_set_transform(screen_pos, tilt, Vector2(float(facing) * sx, sy))
     draw_texture_rect(WITCH_TEXTURE, Rect2(-sprite_size.x / 2.0, -sprite_size.y, sprite_size.x, sprite_size.y), false)
     draw_set_transform(Vector2.ZERO)
-    _warm_glow(screen_pos + Vector2(float(facing) * 41.0, -105.0), 72.0, 0.25)
-    draw_circle(screen_pos + Vector2(float(facing) * 41.0, -105.0), 5.0, Color("#ffd08a"))
+    var light_pos := screen_pos + Vector2(float(facing) * 41.0, -105.0)
+    var light_radius := 96.0 + sin(elapsed * 4.2) * 5.0
+    draw_texture_rect(STAFF_GLOW, Rect2(light_pos - Vector2.ONE * light_radius, Vector2.ONE * light_radius * 2.0), false)
+    draw_circle(light_pos, 3.0, Color("#ffdbaa"))
     if cast_flash > 0.0:
         draw_arc(screen_pos + Vector2(facing * 44, -91), 28.0, 0, TAU, 30, Color("#afff91"), 5.0)
 
@@ -251,82 +256,10 @@ func _warm_glow(pos: Vector2, radius: float, alpha: float) -> void:
         var t := float(i) / 5.0
         draw_circle(pos, radius * t, Color(1.0, 0.62, 0.26, alpha * (1.0 - t) * 0.55))
 
+# Painted SVG environment textures are imported as Godot textures.
+# Gameplay, collision/depth and door interactions remain in this script.
 func _draw_forest() -> void:
-    draw_rect(Rect2(0, 0, VIEW_W, VIEW_H), Color("#122231"))
-    draw_circle(Vector2(1090, 110), 55.0, Color("#b8c4cf"))
-    for i in range(17):
-        var x := float(i) * 92.0 - 35.0
-        draw_line(Vector2(x, 435), Vector2(x - 23, 165), Color("#192d34"), 17.0)
-        draw_circle(Vector2(x, 235), 90.0, Color("#213740"))
-        draw_circle(Vector2(x - 31, 290), 64.0, Color("#1b3038"))
-    draw_rect(Rect2(0, 389, 1280, 331), Color("#2c4146"))
-    for i in range(8):
-        draw_rect(Rect2(0, 397 + i * 39, 1280, 12), Color(0.55, 0.68, 0.75, 0.028))
-    for i in range(35):
-        var px := float((i * 199 + 39) % 1280)
-        var py := 420.0 + float((i * 73) % 300)
-        draw_line(Vector2(px, py), Vector2(px + 22, py - 4), Color("#3f5d53"), 2.0)
-    _draw_cottage()
-
-func _draw_cottage() -> void:
-    draw_ground_ellipse(Vector2(640, 426), 280.0, 45.0, Color("#273139"))
-    draw_rect(Rect2(460, 249, 360, 167), Color("#494047"))
-    draw_colored_polygon(PackedVector2Array([
-        Vector2(416, 269), Vector2(484, 199), Vector2(630, 162),
-        Vector2(775, 192), Vector2(868, 273), Vector2(817, 283),
-        Vector2(630, 217), Vector2(458, 280)
-    ]), Color("#232531"))
-    draw_rect(Rect2(752, 143, 39, 80), Color("#433940"))
-    for y in range(286, 410, 24):
-        draw_line(Vector2(468, float(y)), Vector2(817, float(y)), Color("#615055"), 2.0)
-    for x in [523.0, 745.0]:
-        _warm_glow(Vector2(x, 343), 155.0, 0.58)
-        draw_rect(Rect2(x - 25, 297, 50, 65), Color("#261e29"))
-        draw_rect(Rect2(x - 18, 304, 36, 49), Color("#f9bc6e"))
-        draw_line(Vector2(x, 304), Vector2(x, 354), Color("#47333c"), 5.0)
-        draw_line(Vector2(x - 18, 329), Vector2(x + 18, 329), Color("#47333c"), 5.0)
-    _warm_glow(Vector2(639, 410), 154.0, 0.45)
-    draw_rect(Rect2(602, 322, 75, 101), Color("#261d27"))
-    draw_rect(Rect2(614, 332, 52, 90), Color("#916446"))
-    draw_circle(Vector2(659, 382), 4.5, Color("#ffe3a0"))
-    draw_colored_polygon(PackedVector2Array([
-        Vector2(593, 425), Vector2(684, 425), Vector2(736, 472),
-        Vector2(548, 472)
-    ]), Color(0.95, 0.58, 0.29, 0.15))
+    draw_texture_rect(FOREST_ART, Rect2(0.0, 0.0, VIEW_W, VIEW_H), false)
 
 func _draw_interior() -> void:
-    draw_rect(Rect2(0, 0, VIEW_W, VIEW_H), Color("#261d29"))
-    draw_rect(Rect2(0, 135, 1280, 300), Color("#493a40"))
-    for x in range(0, 1280, 125):
-        draw_line(Vector2(float(x), 139), Vector2(float(x), 430), Color("#302732"), 8.0)
-    for y in range(177, 427, 47):
-        draw_line(Vector2(0, float(y)), Vector2(1280, float(y)), Color("#58464b"), 3.0)
-    draw_rect(Rect2(0, 432, 1280, 288), Color("#604a44"))
-    for y in range(445, 720, 39):
-        draw_line(Vector2(0, float(y)), Vector2(1280, float(y)), Color("#745448"), 2.0)
-    draw_rect(Rect2(155, 236, 209, 198), Color("#29262c"))
-    draw_rect(Rect2(185, 285, 150, 149), Color("#1b1924"))
-    _warm_glow(Vector2(263, 374), 300.0, 0.8)
-    draw_colored_polygon(PackedVector2Array([
-        Vector2(218, 430), Vector2(229, 379), Vector2(248, 401),
-        Vector2(275, 339), Vector2(286, 402), Vector2(303, 360),
-        Vector2(321, 430)
-    ]), Color("#f4a552"))
-    draw_colored_polygon(PackedVector2Array([
-        Vector2(248, 428), Vector2(256, 382),
-        Vector2(275, 370), Vector2(291, 428)
-    ]), Color("#ffe1a0"))
-    draw_rect(Rect2(850, 246, 283, 15), Color("#2c2730"))
-    draw_rect(Rect2(860, 260, 12, 178), Color("#2c2730"))
-    draw_rect(Rect2(1116, 260, 12, 178), Color("#2c2730"))
-    for i in range(7):
-        draw_rect(Rect2(886 + i * 30, 211 - (i % 2) * 14, 19, 35 + (i % 2) * 14), Color("#68505c"))
-    draw_rect(Rect2(835, 436, 304, 21), Color("#342932"))
-    draw_rect(Rect2(860, 457, 13, 77), Color("#342932"))
-    draw_rect(Rect2(1100, 457, 13, 77), Color("#342932"))
-    draw_circle(Vector2(990, 411), 40, Color("#353b41"))
-    draw_rect(Rect2(951, 411, 79, 26), Color("#353b41"))
-    draw_circle(Vector2(990, 393), 25, Color("#48735e"))
-    draw_rect(Rect2(595, 274, 93, 166), Color("#29232b"))
-    draw_rect(Rect2(608, 284, 66, 156), Color("#795647"))
-    draw_circle(Vector2(661, 365), 5, Color("#e1b57d"))
+    draw_texture_rect(INTERIOR_ART, Rect2(0.0, 0.0, VIEW_W, VIEW_H), false)
