@@ -14,7 +14,7 @@ const JUMP_SPEED := 510.0
 const GRAVITY := 1300.0
 const CAST_SPEED := 680.0
 const CAST_RANGE_Y := 48.0
-const WITCH_TEXTURE: Texture2D = preload("res://art/witch.svg")
+const WITCH_TEXTURE: Texture2D = preload("res://art/witch.png")
 
 var witch_position := Vector2(260, 550) # Ground coordinates (X, depth).
 var jump_height := 0.0
