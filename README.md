@@ -1,19 +1,14 @@
-# Witch Game v0.4 — Dark Forest Art Pass
+# Witch Game v0.5 — Painted Cottage Art Test (Godot 4 / Xogot)
 
-Godot 4 / Xogot iPad playable 2.5D witch adventure.
+This update introduces the **first actual raster-painted exterior artwork**: `art/forest_painted_v05.webp`, cut from an original generated fantasy painting to exclude the painted-in witch and user-interface controls. The editable player, HUD and touch controls are still rendered by the game engine. The warm-lit cottage door is aligned near the existing entrance trigger (x≈640), so walking up to the door and pressing USE should still work.
 
-## v0.4 artwork
-- New dark forest environment in `art/forest_v04.svg`: crooked trunks and branches, moonlit cold mist, mossy ground, textured witch cottage, roof and window details.
-- New warm interior environment in `art/interior_v04.svg`: timber beams, detailed shelves/books, large fireplace and cauldron.
-- Smooth radial glow texture in `art/staff_glow.svg` following the witch's staff.
-- All three are **vector-painted prototype art** rather than photorealistic raster illustrations. The next art pass can replace them with hand-painted high-resolution PNGs.
-- Current witch motion is procedural idle / walk / jump, not hand-drawn sprite-sheet frames.
+To keep download and startup lightweight on the iPad, the first painted asset is deliberately compressed (400 × 225 pixels). This is a **visual direction prototype**, not the final full-resolution background. As a consequence, it may look somewhat soft at 1280 × 720. The v0.4 vector forest is still kept in `art/forest_v04.svg` as a backup. The interior still uses `art/interior_v04.svg`; high-resolution repainting of the interior is future work.
 
-## Controls
-iPad: four arrows to move, JUMP to jump, CAST for green magic, USE at the door to enter/exit.
-Keyboard: WASD/arrows, Space to jump, J to cast, E to use.
+The rest of the v0.4 mechanics have been retained: 4-direction brawler movement, separate jump height, procedural idle/walk/jump, magic against the slime, XP, and cabin entrance/exit. Subtle animated cool-colour mist has been added to the exterior foreground.
 
-## Testing
-Import the `main` branch of `https://github.com/ZakharMig/Witch-game` in Xogot as a fresh project (or update its imported files). Walk to the cottage door and tap USE, then walk to the interior door and tap USE to return. Verify movement in all four directions, jump and spell. Check rendering of SVG scenery and staff light in Godot 4.7.
+## iPad test
+Import the main branch from https://github.com/ZakharMig/Witch-game into Xogot, run the game, confirm the painting has loaded, test UP/DOWN/LEFT/RIGHT, JUMP, CAST, USE at the cottage door and USE again inside.
 
-The last known working v0.3 remains available in the `backup/v0.3-working` branch; if SVG import is unsupported in Xogot or a parser error appears, revert to that backup while troubleshooting.
+Keyboard: WASD/arrows, Space jump, J spell, E enter/exit.
+
+Last known working v0.4: branch `backup/v0.4-working`. Any runtime compatibility issues should be reported with a screenshot.
