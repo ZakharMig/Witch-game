@@ -1,6 +1,6 @@
 extends Node2D
 
-# Witch Game v0.5 — illustrated forest and witch cottage (Godot 4 / Xogot).
+# Witch Game v0.4 — illustrated forest and witch cottage (Godot 4 / Xogot).
 # The witch sprite is original SVG vector artwork and can later be swapped
 # for hand-drawn frame animations.
 const VIEW_W := 1280.0
@@ -15,7 +15,7 @@ const GRAVITY := 1300.0
 const CAST_SPEED := 680.0
 const CAST_RANGE_Y := 48.0
 const WITCH_TEXTURE: Texture2D = preload("res://art/witch.png")
-const FOREST_ART: Texture2D = preload("res://art/forest_painted_v05.webp")
+const FOREST_ART: Texture2D = preload("res://art/forest_v04.svg")
 const INTERIOR_ART: Texture2D = preload("res://art/interior_v04.svg")
 const STAFF_GLOW: Texture2D = preload("res://art/staff_glow.svg")
 
@@ -260,10 +260,6 @@ func _warm_glow(pos: Vector2, radius: float, alpha: float) -> void:
 # Gameplay, collision/depth and door interactions remain in this script.
 func _draw_forest() -> void:
     draw_texture_rect(FOREST_ART, Rect2(0.0, 0.0, VIEW_W, VIEW_H), false)
-    # Gentle animated cool haze in the playable foreground.
-    for k in range(3):
-        var drift := sin(elapsed * (0.24 + float(k) * 0.11) + float(k) * 1.5) * 25.0
-        draw_rect(Rect2(drift - 30.0, 452.0 + float(k) * 72.0, VIEW_W + 60.0, 26.0), Color(0.42, 0.63, 0.69, 0.025))
 
 func _draw_interior() -> void:
     draw_texture_rect(INTERIOR_ART, Rect2(0.0, 0.0, VIEW_W, VIEW_H), false)
