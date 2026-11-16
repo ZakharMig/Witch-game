@@ -1,6 +1,6 @@
 extends Node2D
 
-# Witch Game v0.7 — 16 separately painted pose frames (Godot 4 / Xogot).
+# Witch Game v0.8 — responsive enemy, combat and healing (Godot 4 / Xogot).
 # The former witch.png asset is retained as a fallback art reference.
 const VIEW_W := 1280.0
 const VIEW_H := 720.0
@@ -13,6 +13,11 @@ const JUMP_SPEED := 510.0
 const GRAVITY := 1300.0
 const CAST_SPEED := 680.0
 const CAST_RANGE_Y := 48.0
+const SLIME_SPEED := 78.0
+const SLIME_CHASE_RANGE := 540.0
+const ENEMY_TOUCH_DAMAGE := 12
+const ENEMY_ATTACK_COOLDOWN := 1.35
+const PLAYER_INVULNERABLE_TIME := 0.75
 const WITCH_ATLAS: Texture2D = preload("res://art/witch_anim_v07.webp")
 const FRAME_EDGE := 320.0
 const FOREST_ART: Texture2D = preload("res://art/forest_painted_v06.webp")
@@ -32,6 +37,13 @@ var level := 1
 var slime_position := Vector2(930, 548)
 var slime_hp := 3
 var slime_alive := true
+var slime_attack_timer := 0.65
+var slime_hit_timer := 0.0
+var player_hurt_timer := 0.0
+var player_defeated := false
+var victory_timer := 0.0
+var respawn_hint := 0.0
+var slime_walk_clock := 0.0
 var cast_cooldown := 0.0
 var cast_flash := 0.0
 var spells: Array[Dictionary] = []
@@ -64,6 +76,8 @@ func _process(delta: float) -> void:
     if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN) or _has_control("down"):
         motion.y += 1.0
 
+    if player_defeated:
+        motion = Vector2.ZERO
     moving = motion.length_squared() > 0.0
     if moving:
         motion = motion.normalized()
@@ -74,7 +88,7 @@ func _process(delta: float) -> void:
             facing = 1 if motion.x > 0.0 else -1
 
     var jumping := Input.is_key_pressed(KEY_SPACE) or _has_control("jump")
-    if jump_height <= 0.0 and jumping and not jump_was_down:
+    if jump_height <= 0.0 and jumping and not jump_was_down and not player_defeated:
         jump_velocity = JUMP_SPEED
     jump_was_down = jumping
     if jump_height > 0.0 or jump_velocity > 0.0:
@@ -85,15 +99,27 @@ func _process(delta: float) -> void:
             jump_velocity = 0.0
 
     var using := Input.is_key_pressed(KEY_E) or _has_control("use")
-    if using and not use_was_down and jump_height <= 0.0 and _near_door():
-        indoors = not indoors
-        witch_position = enter_spawn if indoors else exit_spawn
-        spells.clear()
+    if using and not use_was_down and jump_height <= 0.0:
+        if player_defeated:
+            _restart_encounter()
+        elif _near_door():
+            indoors = not indoors
+            witch_position = enter_spawn if indoors else exit_spawn
+            spells.clear()
+            if indoors:
+                hp = mini(100, hp + 35)
     use_was_down = using
     cast_cooldown = maxf(0.0, cast_cooldown - delta)
     cast_flash = maxf(0.0, cast_flash - delta)
     cast_anim_timer = maxf(0.0, cast_anim_timer - delta)
-    if (Input.is_key_pressed(KEY_J) or _has_control("cast")) and cast_cooldown <= 0.0:
+    player_hurt_timer = maxf(0.0, player_hurt_timer - delta)
+    slime_hit_timer = maxf(0.0, slime_hit_timer - delta)
+    slime_attack_timer = maxf(0.0, slime_attack_timer - delta)
+    victory_timer = maxf(0.0, victory_timer - delta)
+    respawn_hint = maxf(0.0, respawn_hint - delta)
+    if not indoors and slime_alive and not player_defeated:
+        _update_slime(delta)
+    if not player_defeated and (Input.is_key_pressed(KEY_J) or _has_control("cast")) and cast_cooldown <= 0.0:
         _cast()
 
     for i in range(spells.size() - 1, -1, -1):
@@ -101,9 +127,13 @@ func _process(delta: float) -> void:
         spell["x"] = float(spell["x"]) + float(spell["dir"]) * CAST_SPEED * delta
         if not indoors and slime_alive and absf(float(spell["x"]) - slime_position.x) < 40.0 and absf(float(spell["depth"]) - slime_position.y) < CAST_RANGE_Y:
             slime_hp -= 1
+            slime_hit_timer = 0.16
+            slime_attack_timer = maxf(slime_attack_timer, 0.35)
+            slime_position.x = clampf(slime_position.x + float(spell["dir"]) * 24.0, MIN_X, MAX_X)
             spells.remove_at(i)
             if slime_hp <= 0:
                 slime_alive = false
+                victory_timer = 2.4
                 xp += 25
                 if xp >= level * 50:
                     xp -= level * 50
@@ -119,6 +149,41 @@ func _process(delta: float) -> void:
     else:
         anim_clock += delta
     queue_redraw()
+
+func _update_slime(delta: float) -> void:
+    # The slime navigates across the same 2.5D ground plane as the witch.
+    var separation := witch_position - slime_position
+    if separation.length() < SLIME_CHASE_RANGE and separation.length() > 50.0:
+        slime_position += separation.normalized() * SLIME_SPEED * delta
+        slime_position.x = clampf(slime_position.x, MIN_X, MAX_X)
+        slime_position.y = clampf(slime_position.y, MIN_Y, MAX_Y)
+        slime_walk_clock += delta * 9.0
+    if absf(separation.x) < 49.0 and absf(separation.y) < 38.0 and jump_height < 30.0 and slime_attack_timer <= 0.0 and player_hurt_timer <= 0.0:
+        hp = maxi(0, hp - ENEMY_TOUCH_DAMAGE)
+        player_hurt_timer = PLAYER_INVULNERABLE_TIME
+        slime_attack_timer = ENEMY_ATTACK_COOLDOWN
+        var push_direction := 1.0 if separation.x >= 0.0 else -1.0
+        witch_position.x = clampf(witch_position.x + push_direction * 28.0, MIN_X, MAX_X)
+        if hp <= 0:
+            player_defeated = true
+            respawn_hint = 3.0
+
+func _restart_encounter() -> void:
+    # Respawn at the cottage; XP is retained as this is a small gameplay prototype.
+    hp = 100
+    player_defeated = false
+    indoors = false
+    witch_position = Vector2(335.0, 550.0)
+    jump_height = 0.0
+    jump_velocity = 0.0
+    slime_position = Vector2(960.0, 548.0)
+    slime_hp = 3
+    slime_alive = true
+    slime_attack_timer = 0.9
+    player_hurt_timer = 0.0
+    cast_anim_timer = 0.0
+    spells.clear()
+    victory_timer = 0.0
 
 func _cast() -> void:
     cast_cooldown = 0.40
@@ -191,8 +256,12 @@ func _draw() -> void:
     draw_string(font, Vector2(29, 100), "XP: %d   %s" % [xp, "WITCH HOME" if indoors else "DARK FOREST"], HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#dbe9e0"))
     if _near_door() and jump_height <= 0.0:
         draw_string(font, witch_position + Vector2(-80, -205), "E / USE: %s" % ("EXIT" if indoors else "ENTER"), HORIZONTAL_ALIGNMENT_LEFT, 190, 20, Color("#ffe1a2"))
-    if not indoors and not slime_alive:
+    if victory_timer > 0.0 and not indoors:
         draw_string(font, Vector2(465, 230), "VICTORY! +25 XP", HORIZONTAL_ALIGNMENT_LEFT, -1, 36, Color("#ffe2a1"))
+    if player_defeated:
+        draw_rect(Rect2(365, 275, 552, 140), Color(0.08, 0.04, 0.09, 0.82))
+        draw_string(font, Vector2(465, 335), "YOU WERE DEFEATED", HORIZONTAL_ALIGNMENT_LEFT, 400, 32, Color("#ffc8ca"))
+        draw_string(font, Vector2(480, 386), "PRESS USE TO TRY AGAIN", HORIZONTAL_ALIGNMENT_LEFT, 360, 21, Color.WHITE)
     draw_string(font, Vector2(465, 49), "WASD: move   SPACE: jump   J: cast   E: use", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#ecede0"))
 
     _draw_button(Vector2(160, 510), "UP", "up", 50)
@@ -201,7 +270,7 @@ func _draw() -> void:
     _draw_button(Vector2(240, 583), "RIGHT", "right", 50)
     _draw_button(Vector2(1000, 625), "JUMP", "jump", 64)
     _draw_button(Vector2(1170, 625), "CAST", "cast", 64)
-    _draw_button(Vector2(1100, 486), "USE", "use", 46)
+    _draw_button(Vector2(1100, 486), "RETRY" if player_defeated else "USE", "use", 46)
 
 func _draw_witch() -> void:
     # 4x4 hand-painted keyframe atlas. Source frame = 320x320 px.
@@ -230,6 +299,8 @@ func _draw_witch() -> void:
             atlas_row = 0
             atlas_col = int(anim_clock * 3.5) % 4
     var screen_pos := witch_position + Vector2(0.0, -jump_height)
+    if player_hurt_timer > 0.0 and int(elapsed * 18.0) % 2 == 0:
+        return
     var sprite_size := Vector2(232.0, 224.0)
     var source_rect := Rect2(float(atlas_col) * FRAME_EDGE, float(atlas_row) * FRAME_EDGE, FRAME_EDGE, FRAME_EDGE)
     draw_set_transform(screen_pos, 0.0, Vector2(float(facing), 1.0))
@@ -253,12 +324,20 @@ func draw_ground_ellipse(center: Vector2, rx: float, ry: float, color: Color) ->
 
 func _draw_slime() -> void:
     draw_ground_ellipse(slime_position + Vector2(0, 3), 43, 10, Color(0, 0, 0, 0.35))
-    draw_circle(slime_position + Vector2(0, -24), 31, Color("#a84c83"))
-    draw_rect(Rect2(slime_position.x - 30, slime_position.y - 29, 60, 30), Color("#a84c83"))
-    draw_circle(slime_position + Vector2(-11, -32), 5, Color.WHITE)
-    draw_circle(slime_position + Vector2(11, -32), 5, Color.WHITE)
-    draw_rect(Rect2(slime_position.x - 36, slime_position.y - 74, 72, 7), Color("#4d2a37"))
-    draw_rect(Rect2(slime_position.x - 36, slime_position.y - 74, float(slime_hp) * 24.0, 7), Color("#f6a1c0"))
+    # A squash-and-stretch bounce differentiates the enemy from scenery.
+    var bounce := absf(sin(slime_walk_clock)) * 10.0
+    var body_tint := Color("#f4c1e3") if slime_hit_timer > 0.0 else Color("#a84c83")
+    var centre := slime_position + Vector2(0.0, -26.0 - bounce)
+    draw_set_transform(centre, 0.0, Vector2(1.0 + bounce / 60.0, 1.0 - bounce / 85.0))
+    draw_circle(Vector2.ZERO, 31.0, body_tint)
+    draw_rect(Rect2(-30.0, -2.0, 60.0, 27.0), body_tint)
+    draw_circle(Vector2(-11.0, -8.0), 5.0, Color.WHITE)
+    draw_circle(Vector2(11.0, -8.0), 5.0, Color.WHITE)
+    draw_circle(Vector2(-10.0, -8.0), 2.2, Color("#27202d"))
+    draw_circle(Vector2(12.0, -8.0), 2.2, Color("#27202d"))
+    draw_set_transform(Vector2.ZERO)
+    draw_rect(Rect2(slime_position.x - 36.0, slime_position.y - 88.0 - bounce, 72.0, 7.0), Color("#4d2a37"))
+    draw_rect(Rect2(slime_position.x - 36.0, slime_position.y - 88.0 - bounce, float(slime_hp) * 24.0, 7.0), Color("#f6a1c0"))
 
 func _draw_button(center: Vector2, caption: String, control: String, radius: float) -> void:
     var active := _has_control(control)

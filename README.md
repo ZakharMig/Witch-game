@@ -1,19 +1,21 @@
-# Witch Game v0.7 — Painted Witch Animation (Godot 4 / Xogot)
+# Witch Game v0.8 — first combat loop (Godot 4 / Xogot)
 
-This release adds a **true, pre-rendered 16-frame character animation atlas** at `art/witch_anim_v07.webp` (1280 × 1280, alpha background, 4 columns × 4 rows, 320 × 320 per frame). Each frame depicts a separately painted pose, rather than procedurally stretching a single still sprite.
+Based on the tested v0.7 witch animation and v0.6 painted forest.
 
-Rows in the atlas:
-- **Idle (4 poses):** cloak/hair shifts and subtle breathing.
-- **Walk (4 poses):** alternating strides and swinging cape; looped at 9 fps.
-- **Jump (4 poses):** crouch, rise, midair, landing; selected by vertical jump velocity.
-- **Cast (4 poses):** ready, raise staff, release, recovery; uses the existing spell timer.
+## New gameplay
+- The forest slime **chases** the witch across both horizontal and depth coordinates when nearby.
+- Touching the slime causes **12 HP damage**, brief knockback, and **0.75 seconds of invulnerability** so the player cannot lose all HP in one frame.
+- Jumping above the slime's reach avoids contact damage.
+- Green magic still damages the slime only when the witch and the enemy are approximately aligned on the same depth lane; successful hits briefly flash and knock the slime back.
+- After three hits, the slime is defeated and awards **25 XP**.
+- If HP reaches zero, a **YOU WERE DEFEATED** overlay appears. Tap **RETRY / USE** (or keyboard E) to restart the fight at full HP, keeping already earned XP.
+- Entering the cottage and leaving it still works. **Entering the cottage restores 35 HP**, up to 100.
+- Slime bounces visually while moving and flashes when hit.
 
-The illustrated witch has the same general pointed hat, burgundy cloak, equipment and staff concept, but the new hand-painted character art is a refreshed interpretation, *not* a pixel-exact duplicate of the previous sprite. The original `art/witch.png` is retained for comparison. Art direction can be refined after the iPad test.
+## Controls
+iPad: four direction arrows, JUMP, CAST, USE. Keyboard: WASD / arrows, Space, J, E.
 
-To reduce iPad load, the character atlas is compressed WebP with transparency, and **does not build or edit 18 sprite textures pixel-by-pixel at startup**. Code draws the selected atlas region each frame.
+## Testing on iPad
+Import the updated **main** branch from https://github.com/ZakharMig/Witch-game into Xogot. Check four-direction movement, animation, jumping to evade a slime, taking HP damage, dealing three magic hits, XP reward, death and retry, and entering/exiting the house. Note the slime may take a moment to reach you from the right side of the level.
 
-Forest exterior remains the full-res version 0.6 painting (`art/forest_painted_v06.webp`). Interior, HUD, controller, 4-direction movement, jump height, green spells and the house USE interaction remain unchanged.
-
-**Controls:** iPad arrows, JUMP, CAST, USE; keyboard WASD/arrows, Space, J, E.
-
-**Test:** import `https://github.com/ZakharMig/Witch-game` (main branch) into Xogot. Check that the witch displays correctly with no checkerboard, loops idle and walking, changes pose during jump and casts, and all prior gameplay remains. If an issue occurs, v0.6 is saved as `backup/v0.6-working`. Runtime test on Xogot is not yet performed.
+This version retains the same painted exterior, interior, witch atlas and on-screen controls. The verified v0.7 code is preserved in `backup/v0.7-working`. The update still needs a real Xogot runtime test.
