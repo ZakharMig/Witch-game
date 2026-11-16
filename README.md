@@ -1,18 +1,19 @@
-# Witch Game 0.7 — Witch Animation Prototype (Godot 4 / Xogot)
+# Witch Game v0.7 — Painted Witch Animation (Godot 4 / Xogot)
 
-## What changed
-- The **original Witch sprite** (`art/witch.png`) is preserved exactly as the character's source, so the witch's silhouette, hat, cape, staff, colours and costume are not replaced by a different illustration.
-- At startup, Godot generates and caches **18 distinct raster pose textures** from the existing 90×154 witch PNG, with independent pixel-region shifts for cloak, head, feet, torso and staff. These are real frame textures selected in an animation sequence, not simply whole-character rotation.
-- Four animation states: idle (4 frames), walking (6 frames), jumping (4 poses), casting (4 poses). The casting pose is timed with spell creation. The staff glow follows the approximate crystal position.
-- Forest exterior, cabin, interior, 4-direction brawler movement, independent jump height, spell combat, XP, door USE and touch controls are unchanged.
+This release adds a **true, pre-rendered 16-frame character animation atlas** at `art/witch_anim_v07.webp` (1280 × 1280, alpha background, 4 columns × 4 rows, 320 × 320 per frame). Each frame depicts a separately painted pose, rather than procedurally stretching a single still sprite.
 
-## Important artistic limitation
-This is a **first frame-based animation prototype generated from the existing sprite**, NOT 18 hand-drawn fully redrawn animation frames. It preserves the character faithfully and tests frame timing/animation states, but movement is still limited by the single source illustration. A future professional animation pass should use separately drawn key poses for legs, hands, fabric, staff and hair.
+Rows in the atlas:
+- **Idle (4 poses):** cloak/hair shifts and subtle breathing.
+- **Walk (4 poses):** alternating strides and swinging cape; looped at 9 fps.
+- **Jump (4 poses):** crouch, rise, midair, landing; selected by vertical jump velocity.
+- **Cast (4 poses):** ready, raise staff, release, recovery; uses the existing spell timer.
 
-## Controls and iPad test
-- iPad: LEFT/RIGHT/UP/DOWN, JUMP, CAST, USE.
-- Keyboard: WASD/arrows, Space, J, E.
-- Import the `main` branch of https://github.com/ZakharMig/Witch-game into Xogot. Test that the witch's cape/legs subtly animate in walking, her pose changes in the air, she has breathing/cloth motion at rest, and she moves the staff when casting.
-- Verify the forest, cottage, entry/exit, and combat are still working.
+The illustrated witch has the same general pointed hat, burgundy cloak, equipment and staff concept, but the new hand-painted character art is a refreshed interpretation, *not* a pixel-exact duplicate of the previous sprite. The original `art/witch.png` is retained for comparison. Art direction can be refined after the iPad test.
 
-Last known working version v0.6: `backup/v0.6-working`. Xogot runtime verification of v0.7 is still pending.
+To reduce iPad load, the character atlas is compressed WebP with transparency, and **does not build or edit 18 sprite textures pixel-by-pixel at startup**. Code draws the selected atlas region each frame.
+
+Forest exterior remains the full-res version 0.6 painting (`art/forest_painted_v06.webp`). Interior, HUD, controller, 4-direction movement, jump height, green spells and the house USE interaction remain unchanged.
+
+**Controls:** iPad arrows, JUMP, CAST, USE; keyboard WASD/arrows, Space, J, E.
+
+**Test:** import `https://github.com/ZakharMig/Witch-game` (main branch) into Xogot. Check that the witch displays correctly with no checkerboard, loops idle and walking, changes pose during jump and casts, and all prior gameplay remains. If an issue occurs, v0.6 is saved as `backup/v0.6-working`. Runtime test on Xogot is not yet performed.

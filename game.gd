@@ -1,7 +1,7 @@
 extends Node2D
 
-# Witch Game v0.7 — original-witch raster keyframes (Godot 4 / Xogot).
-# Preserve the existing witch.png silhouette and colours while animating poses.
+# Witch Game v0.7 — 16 separately painted pose frames (Godot 4 / Xogot).
+# The former witch.png asset is retained as a fallback art reference.
 const VIEW_W := 1280.0
 const VIEW_H := 720.0
 const MIN_X := 65.0
@@ -13,7 +13,8 @@ const JUMP_SPEED := 510.0
 const GRAVITY := 1300.0
 const CAST_SPEED := 680.0
 const CAST_RANGE_Y := 48.0
-const WITCH_TEXTURE: Texture2D = preload("res://art/witch.png")
+const WITCH_ATLAS: Texture2D = preload("res://art/witch_anim_v07.webp")
+const FRAME_EDGE := 320.0
 const FOREST_ART: Texture2D = preload("res://art/forest_painted_v06.webp")
 const INTERIOR_ART: Texture2D = preload("res://art/interior_v04.svg")
 const STAFF_GLOW: Texture2D = preload("res://art/staff_glow.svg")
@@ -42,132 +43,14 @@ var jump_was_down := false
 var anim_state := "idle"
 var anim_clock := 0.0
 var cast_anim_timer := 0.0
-var idle_frames: Array[Texture2D] = []
-var walk_frames: Array[Texture2D] = []
-var jump_frames: Array[Texture2D] = []
-var cast_frames: Array[Texture2D] = []
 var door_pos := Vector2(633, 472)
 var exit_pos := Vector2(640, 487)
 var enter_spawn := Vector2(640, 535)
 var exit_spawn := Vector2(640, 550)
 
 func _ready() -> void:
-    _build_animation_frames()
+    # Painted poses are pre-rendered; no per-pixel texture rebuild on iPad.
     queue_redraw()
-
-func _build_animation_frames() -> void:
-    # Build a lightweight frame atlas once, from the SAME original witch image.
-    # This is a first pose-based sprite animation pass, not hand-painted redraws.
-    var source := WITCH_TEXTURE.get_image()
-    source.convert(Image.FORMAT_RGBA8)
-    for i in range(4):
-        idle_frames.append(_make_pose(source, "idle", i, 4))
-    for i in range(6):
-        walk_frames.append(_make_pose(source, "walk", i, 6))
-    for i in range(4):
-        jump_frames.append(_make_pose(source, "jump", i, 4))
-    for i in range(4):
-        cast_frames.append(_make_pose(source, "cast", i, 4))
-
-func _make_pose(source: Image, state: String, index: int, count: int) -> Texture2D:
-    # Small independent shifts for head, cloak, boots, body and staff.
-    # Each pose is stored as its own raster texture and played by frame index.
-    var phase := TAU * float(index) / float(count)
-    var step := sin(phase)
-    var side := cos(phase)
-    var head_shift := 0.0
-    var cape_shift := 0.0
-    var left_leg_shift := 0.0
-    var right_leg_shift := 0.0
-    var staff_shift := 0.0
-    var body_shift := 0.0
-    match state:
-        "idle":
-            head_shift = side * 0.8
-            cape_shift = step * 1.8 + side * 0.8
-            staff_shift = step * 1.2
-            body_shift = side * 1.0
-        "walk":
-            head_shift = step * 1.2 + side * 0.8
-            cape_shift = step * 4.0 + side * 1.5
-            left_leg_shift = step * 5.0 + side * 1.3
-            right_leg_shift = -step * 5.0 + side * 1.3
-            staff_shift = -step * 1.8
-            body_shift = -absf(side) * 2.0
-        "jump":
-            match index:
-                0:
-                    left_leg_shift = -2.0
-                    right_leg_shift = 2.0
-                    cape_shift = -3.0
-                    body_shift = -2.0
-                1:
-                    left_leg_shift = 5.0
-                    right_leg_shift = -5.0
-                    cape_shift = -6.0
-                    body_shift = -3.0
-                    staff_shift = 2.0
-                2:
-                    left_leg_shift = -4.0
-                    right_leg_shift = 5.0
-                    cape_shift = 6.0
-                    staff_shift = 3.0
-                3:
-                    left_leg_shift = -2.0
-                    right_leg_shift = 2.0
-                    cape_shift = 2.0
-                    body_shift = 2.0
-        "cast":
-            match index:
-                0:
-                    staff_shift = -3.0
-                    cape_shift = -2.0
-                    head_shift = -1.0
-                1:
-                    staff_shift = 4.0
-                    cape_shift = 3.0
-                    head_shift = 1.0
-                2:
-                    staff_shift = 6.0
-                    cape_shift = 5.0
-                    head_shift = 1.5
-                3:
-                    staff_shift = 1.0
-                    cape_shift = 1.0
-
-    var w := source.get_width()
-    var h := source.get_height()
-    var pose := Image.create(w, h, false, Image.FORMAT_RGBA8)
-    pose.fill(Color.TRANSPARENT)
-    for y in range(h):
-        for x in range(w):
-            var fx := float(x)
-            var fy := float(y)
-            var shift_x := 0.0
-            var shift_y := 0.0
-            # The original 90x154 image has a hat/head above y=60.
-            if y < 62:
-                shift_x += head_shift * clampf((68.0 - fy) / 45.0, 0.0, 1.0)
-            # Loose cape occupies the left-hand part of the sprite.
-            if y > 55 and x < 48:
-                shift_x += cape_shift * clampf((48.0 - fx) / 42.0, 0.0, 1.0) * clampf((fy - 55.0) / 70.0, 0.0, 1.0)
-            # Opposing foot motion creates a visible walk cycle.
-            if y > 101:
-                var leg_weight := clampf((fy - 101.0) / 48.0, 0.0, 1.0)
-                if x < 47:
-                    shift_x += left_leg_shift * leg_weight
-                else:
-                    shift_x += right_leg_shift * leg_weight
-            # The staff sits at the right edge of the original PNG.
-            if x > 64 and y < 138:
-                shift_x += staff_shift * clampf((fx - 64.0) / 24.0, 0.0, 1.0)
-            if y > 52 and y < 114:
-                shift_y += body_shift * (1.0 - absf(fy - 83.0) / 31.0)
-            var src_x := x - roundi(shift_x)
-            var src_y := y - roundi(shift_y)
-            if src_x >= 0 and src_x < w and src_y >= 0 and src_y < h:
-                pose.set_pixel(x, y, source.get_pixel(src_x, src_y))
-    return ImageTexture.create_from_image(pose)
 
 func _process(delta: float) -> void:
     elapsed += delta
@@ -321,42 +204,47 @@ func _draw() -> void:
     _draw_button(Vector2(1100, 486), "USE", "use", 46)
 
 func _draw_witch() -> void:
-    # The ground shadow remains anchored during jumps.
-    draw_ground_ellipse(witch_position + Vector2(0, 2), 46, 12, Color(0.07, 0.08, 0.11, 0.42))
-    var frame_texture: Texture2D = WITCH_TEXTURE
-    var pose_index := 0
+    # 4x4 hand-painted keyframe atlas. Source frame = 320x320 px.
+    # Ground coordinate and airborne height remain independent.
+    draw_ground_ellipse(witch_position + Vector2(0.0, 2.0), 46.0, 12.0, Color(0.07, 0.08, 0.11, 0.42))
+    var atlas_row := 0
+    var atlas_col := 0
     match anim_state:
-        "idle":
-            pose_index = int(anim_clock / 0.26) % idle_frames.size()
-            frame_texture = idle_frames[pose_index]
         "walk":
-            pose_index = int(anim_clock / 0.085) % walk_frames.size()
-            frame_texture = walk_frames[pose_index]
+            atlas_row = 1
+            atlas_col = int(anim_clock * 9.0) % 4
         "jump":
-            if jump_velocity > 190.0:
-                pose_index = 1
-            elif jump_velocity < -190.0:
-                pose_index = 2
+            atlas_row = 2
+            if jump_velocity > 260.0:
+                atlas_col = 0
+            elif jump_velocity > 70.0:
+                atlas_col = 1
+            elif jump_velocity > -170.0:
+                atlas_col = 2
             else:
-                pose_index = 3
-            frame_texture = jump_frames[pose_index]
+                atlas_col = 3
         "cast":
-            pose_index = clampi(int((0.36 - cast_anim_timer) / 0.09), 0, cast_frames.size() - 1)
-            frame_texture = cast_frames[pose_index]
+            atlas_row = 3
+            atlas_col = clampi(int((0.36 - cast_anim_timer) / 0.09), 0, 3)
+        _:
+            atlas_row = 0
+            atlas_col = int(anim_clock * 3.5) % 4
     var screen_pos := witch_position + Vector2(0.0, -jump_height)
-    var sprite_size := Vector2(134.0, 201.0)
+    var sprite_size := Vector2(232.0, 224.0)
+    var source_rect := Rect2(float(atlas_col) * FRAME_EDGE, float(atlas_row) * FRAME_EDGE, FRAME_EDGE, FRAME_EDGE)
     draw_set_transform(screen_pos, 0.0, Vector2(float(facing), 1.0))
-    draw_texture_rect(frame_texture, Rect2(-sprite_size.x / 2.0, -sprite_size.y, sprite_size.x, sprite_size.y), false)
+    draw_texture_rect_region(WITCH_ATLAS, Rect2(-sprite_size.x * 0.5, -sprite_size.y, sprite_size.x, sprite_size.y), source_rect)
     draw_set_transform(Vector2.ZERO)
-    var orb_offset := Vector2(float(facing) * 52.0, -165.0)
-    if anim_state == "cast":
-        orb_offset += Vector2(float(facing) * 5.0, -2.0)
+
+    # The warm moving staff light follows the pose (front of the character).
+    var orb_offset := Vector2(float(facing) * 35.0, -163.0)
+    if anim_state == "cast" and atlas_col >= 1:
+        orb_offset = Vector2(float(facing) * 71.0, -151.0)
     var light_pos := screen_pos + orb_offset
     var light_radius := 92.0 + sin(elapsed * 4.2) * 4.0
     draw_texture_rect(STAFF_GLOW, Rect2(light_pos - Vector2.ONE * light_radius, Vector2.ONE * light_radius * 2.0), false)
-    draw_circle(light_pos, 3.0, Color("#ffdbaa"))
     if cast_flash > 0.0:
-        draw_arc(light_pos, 22.0, 0, TAU, 30, Color("#afff91"), 4.0)
+        draw_arc(light_pos, 22.0, 0.0, TAU, 30, Color("#afff91"), 4.0)
 
 func draw_ground_ellipse(center: Vector2, rx: float, ry: float, color: Color) -> void:
     draw_set_transform(center, 0, Vector2(rx / ry, 1.0))
