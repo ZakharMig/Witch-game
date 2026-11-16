@@ -184,7 +184,7 @@ func _draw() -> void:
 
 func _draw_witch() -> void:
     # Shadow stays on ground when the character jumps.
-    draw_ellipse(witch_position + Vector2(0, 2), 46, 12, Color(0.07, 0.08, 0.11, 0.42))
+    draw_ground_ellipse(witch_position + Vector2(0, 2), 46, 12, Color(0.07, 0.08, 0.11, 0.42))
     var bob := sin(elapsed * 11.0) * 4.0 if moving and jump_height <= 0.0 else sin(elapsed * 2.4) * 1.5
     var sprite_size := Vector2(124, 186)
     var screen_pos := witch_position + Vector2(0, -jump_height + bob)
@@ -195,13 +195,13 @@ func _draw_witch() -> void:
     if cast_flash > 0.0:
         draw_arc(screen_pos + Vector2(facing * 44, -91), 28.0, 0, TAU, 30, Color("#afff91"), 5.0)
 
-func draw_ellipse(center: Vector2, rx: float, ry: float, color: Color) -> void:
+func draw_ground_ellipse(center: Vector2, rx: float, ry: float, color: Color) -> void:
     draw_set_transform(center, 0, Vector2(rx / ry, 1.0))
     draw_circle(Vector2.ZERO, ry, color)
     draw_set_transform(Vector2.ZERO)
 
 func _draw_slime() -> void:
-    draw_ellipse(slime_position + Vector2(0, 3), 43, 10, Color(0, 0, 0, 0.35))
+    draw_ground_ellipse(slime_position + Vector2(0, 3), 43, 10, Color(0, 0, 0, 0.35))
     draw_circle(slime_position + Vector2(0, -24), 31, Color("#a84c83"))
     draw_rect(Rect2(slime_position.x - 30, slime_position.y - 29, 60, 30), Color("#a84c83"))
     draw_circle(slime_position + Vector2(-11, -32), 5, Color.WHITE)
