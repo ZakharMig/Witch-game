@@ -1,8 +1,7 @@
 extends Node2D
 
-# Witch Game v0.6 — illustrated forest and witch cottage (Godot 4 / Xogot).
-# The witch sprite is original SVG vector artwork and can later be swapped
-# for hand-drawn frame animations.
+# Witch Game v0.7 — original-witch raster keyframes (Godot 4 / Xogot).
+# Preserve the existing witch.png silhouette and colours while animating poses.
 const VIEW_W := 1280.0
 const VIEW_H := 720.0
 const MIN_X := 65.0
@@ -41,13 +40,134 @@ var indoors := false
 var use_was_down := false
 var jump_was_down := false
 var anim_state := "idle"
+var anim_clock := 0.0
+var cast_anim_timer := 0.0
+var idle_frames: Array[Texture2D] = []
+var walk_frames: Array[Texture2D] = []
+var jump_frames: Array[Texture2D] = []
+var cast_frames: Array[Texture2D] = []
 var door_pos := Vector2(633, 472)
 var exit_pos := Vector2(640, 487)
 var enter_spawn := Vector2(640, 535)
 var exit_spawn := Vector2(640, 550)
 
 func _ready() -> void:
+    _build_animation_frames()
     queue_redraw()
+
+func _build_animation_frames() -> void:
+    # Build a lightweight frame atlas once, from the SAME original witch image.
+    # This is a first pose-based sprite animation pass, not hand-painted redraws.
+    var source := WITCH_TEXTURE.get_image()
+    source.convert(Image.FORMAT_RGBA8)
+    for i in range(4):
+        idle_frames.append(_make_pose(source, "idle", i, 4))
+    for i in range(6):
+        walk_frames.append(_make_pose(source, "walk", i, 6))
+    for i in range(4):
+        jump_frames.append(_make_pose(source, "jump", i, 4))
+    for i in range(4):
+        cast_frames.append(_make_pose(source, "cast", i, 4))
+
+func _make_pose(source: Image, state: String, index: int, count: int) -> Texture2D:
+    # Small independent shifts for head, cloak, boots, body and staff.
+    # Each pose is stored as its own raster texture and played by frame index.
+    var phase := TAU * float(index) / float(count)
+    var step := sin(phase)
+    var side := cos(phase)
+    var head_shift := 0.0
+    var cape_shift := 0.0
+    var left_leg_shift := 0.0
+    var right_leg_shift := 0.0
+    var staff_shift := 0.0
+    var body_shift := 0.0
+    match state:
+        "idle":
+            head_shift = side * 0.8
+            cape_shift = step * 1.8 + side * 0.8
+            staff_shift = step * 1.2
+            body_shift = side * 1.0
+        "walk":
+            head_shift = step * 1.2 + side * 0.8
+            cape_shift = step * 4.0 + side * 1.5
+            left_leg_shift = step * 5.0 + side * 1.3
+            right_leg_shift = -step * 5.0 + side * 1.3
+            staff_shift = -step * 1.8
+            body_shift = -absf(side) * 2.0
+        "jump":
+            match index:
+                0:
+                    left_leg_shift = -2.0
+                    right_leg_shift = 2.0
+                    cape_shift = -3.0
+                    body_shift = -2.0
+                1:
+                    left_leg_shift = 5.0
+                    right_leg_shift = -5.0
+                    cape_shift = -6.0
+                    body_shift = -3.0
+                    staff_shift = 2.0
+                2:
+                    left_leg_shift = -4.0
+                    right_leg_shift = 5.0
+                    cape_shift = 6.0
+                    staff_shift = 3.0
+                3:
+                    left_leg_shift = -2.0
+                    right_leg_shift = 2.0
+                    cape_shift = 2.0
+                    body_shift = 2.0
+        "cast":
+            match index:
+                0:
+                    staff_shift = -3.0
+                    cape_shift = -2.0
+                    head_shift = -1.0
+                1:
+                    staff_shift = 4.0
+                    cape_shift = 3.0
+                    head_shift = 1.0
+                2:
+                    staff_shift = 6.0
+                    cape_shift = 5.0
+                    head_shift = 1.5
+                3:
+                    staff_shift = 1.0
+                    cape_shift = 1.0
+
+    var w := source.get_width()
+    var h := source.get_height()
+    var pose := Image.create(w, h, false, Image.FORMAT_RGBA8)
+    pose.fill(Color.TRANSPARENT)
+    for y in range(h):
+        for x in range(w):
+            var fx := float(x)
+            var fy := float(y)
+            var shift_x := 0.0
+            var shift_y := 0.0
+            # The original 90x154 image has a hat/head above y=60.
+            if y < 62:
+                shift_x += head_shift * clampf((68.0 - fy) / 45.0, 0.0, 1.0)
+            # Loose cape occupies the left-hand part of the sprite.
+            if y > 55 and x < 48:
+                shift_x += cape_shift * clampf((48.0 - fx) / 42.0, 0.0, 1.0) * clampf((fy - 55.0) / 70.0, 0.0, 1.0)
+            # Opposing foot motion creates a visible walk cycle.
+            if y > 101:
+                var leg_weight := clampf((fy - 101.0) / 48.0, 0.0, 1.0)
+                if x < 47:
+                    shift_x += left_leg_shift * leg_weight
+                else:
+                    shift_x += right_leg_shift * leg_weight
+            # The staff sits at the right edge of the original PNG.
+            if x > 64 and y < 138:
+                shift_x += staff_shift * clampf((fx - 64.0) / 24.0, 0.0, 1.0)
+            if y > 52 and y < 114:
+                shift_y += body_shift * (1.0 - absf(fy - 83.0) / 31.0)
+            var src_x := x - roundi(shift_x)
+            var src_y := y - roundi(shift_y)
+            if src_x >= 0 and src_x < w and src_y >= 0 and src_y < h:
+                pose.set_pixel(x, y, source.get_pixel(src_x, src_y))
+    return ImageTexture.create_from_image(pose)
 
 func _process(delta: float) -> void:
     elapsed += delta
@@ -74,7 +194,6 @@ func _process(delta: float) -> void:
     if jump_height <= 0.0 and jumping and not jump_was_down:
         jump_velocity = JUMP_SPEED
     jump_was_down = jumping
-    anim_state = "jump" if jump_height > 0.0 or jump_velocity > 0.0 else ("walk" if moving else "idle")
     if jump_height > 0.0 or jump_velocity > 0.0:
         jump_height += jump_velocity * delta
         jump_velocity -= GRAVITY * delta
@@ -90,6 +209,7 @@ func _process(delta: float) -> void:
     use_was_down = using
     cast_cooldown = maxf(0.0, cast_cooldown - delta)
     cast_flash = maxf(0.0, cast_flash - delta)
+    cast_anim_timer = maxf(0.0, cast_anim_timer - delta)
     if (Input.is_key_pressed(KEY_J) or _has_control("cast")) and cast_cooldown <= 0.0:
         _cast()
 
@@ -109,11 +229,18 @@ func _process(delta: float) -> void:
         if float(spell["x"]) < -30.0 or float(spell["x"]) > VIEW_W + 30.0:
             spells.remove_at(i)
 
+    var next_state := "cast" if cast_anim_timer > 0.0 else ("jump" if jump_height > 0.0 or jump_velocity > 0.0 else ("walk" if moving else "idle"))
+    if next_state != anim_state:
+        anim_state = next_state
+        anim_clock = 0.0
+    else:
+        anim_clock += delta
     queue_redraw()
 
 func _cast() -> void:
     cast_cooldown = 0.40
     cast_flash = 0.2
+    cast_anim_timer = 0.36
     spells.append({"x": witch_position.x + facing * 42.0, "depth": witch_position.y, "dir": facing, "altitude": jump_height})
 
 func _has_control(control: String) -> bool:
@@ -194,36 +321,42 @@ func _draw() -> void:
     _draw_button(Vector2(1100, 486), "USE", "use", 46)
 
 func _draw_witch() -> void:
-    # Shadow stays on ground when the character jumps.
+    # The ground shadow remains anchored during jumps.
     draw_ground_ellipse(witch_position + Vector2(0, 2), 46, 12, Color(0.07, 0.08, 0.11, 0.42))
-    # Procedural animation of the existing artwork: idle, walk, jump.
-    var bob := 0.0
-    var tilt := 0.0
-    var sx := 1.0
-    var sy := 1.0
-    if anim_state == "idle":
-        bob = sin(elapsed * 2.5) * 2.0
-        tilt = sin(elapsed * 1.8) * 0.016
-        sy = 1.0 + sin(elapsed * 2.5) * 0.012
-    elif anim_state == "walk":
-        bob = -absf(sin(elapsed * 11.0)) * 6.0
-        tilt = sin(elapsed * 11.0) * 0.045
-        sx = 1.0 + sin(elapsed * 11.0) * 0.02
-    else:
-        sy = 1.07 if jump_velocity > 0.0 else 0.96
-        sx = 0.96 if jump_velocity > 0.0 else 1.04
-        tilt = -0.04 if jump_velocity > 0.0 else 0.025
-    var sprite_size := Vector2(134, 201)
-    var screen_pos := witch_position + Vector2(0, -jump_height + bob)
-    draw_set_transform(screen_pos, tilt, Vector2(float(facing) * sx, sy))
-    draw_texture_rect(WITCH_TEXTURE, Rect2(-sprite_size.x / 2.0, -sprite_size.y, sprite_size.x, sprite_size.y), false)
+    var frame_texture: Texture2D = WITCH_TEXTURE
+    var pose_index := 0
+    match anim_state:
+        "idle":
+            pose_index = int(anim_clock / 0.26) % idle_frames.size()
+            frame_texture = idle_frames[pose_index]
+        "walk":
+            pose_index = int(anim_clock / 0.085) % walk_frames.size()
+            frame_texture = walk_frames[pose_index]
+        "jump":
+            if jump_velocity > 190.0:
+                pose_index = 1
+            elif jump_velocity < -190.0:
+                pose_index = 2
+            else:
+                pose_index = 3
+            frame_texture = jump_frames[pose_index]
+        "cast":
+            pose_index = clampi(int((0.36 - cast_anim_timer) / 0.09), 0, cast_frames.size() - 1)
+            frame_texture = cast_frames[pose_index]
+    var screen_pos := witch_position + Vector2(0.0, -jump_height)
+    var sprite_size := Vector2(134.0, 201.0)
+    draw_set_transform(screen_pos, 0.0, Vector2(float(facing), 1.0))
+    draw_texture_rect(frame_texture, Rect2(-sprite_size.x / 2.0, -sprite_size.y, sprite_size.x, sprite_size.y), false)
     draw_set_transform(Vector2.ZERO)
-    var light_pos := screen_pos + Vector2(float(facing) * 41.0, -105.0)
-    var light_radius := 96.0 + sin(elapsed * 4.2) * 5.0
+    var orb_offset := Vector2(float(facing) * 52.0, -165.0)
+    if anim_state == "cast":
+        orb_offset += Vector2(float(facing) * 5.0, -2.0)
+    var light_pos := screen_pos + orb_offset
+    var light_radius := 92.0 + sin(elapsed * 4.2) * 4.0
     draw_texture_rect(STAFF_GLOW, Rect2(light_pos - Vector2.ONE * light_radius, Vector2.ONE * light_radius * 2.0), false)
     draw_circle(light_pos, 3.0, Color("#ffdbaa"))
     if cast_flash > 0.0:
-        draw_arc(screen_pos + Vector2(facing * 44, -91), 28.0, 0, TAU, 30, Color("#afff91"), 5.0)
+        draw_arc(light_pos, 22.0, 0, TAU, 30, Color("#afff91"), 4.0)
 
 func draw_ground_ellipse(center: Vector2, rx: float, ry: float, color: Color) -> void:
     draw_set_transform(center, 0, Vector2(rx / ry, 1.0))
