@@ -1,14 +1,15 @@
-# Witch Game v0.5 — Painted Cottage Art Test (Godot 4 / Xogot)
+# Witch Game 0.6 — Painted Dark Forest (Godot 4 / Xogot)
 
-This update introduces the **first actual raster-painted exterior artwork**: `art/forest_painted_v05.webp`, cut from an original generated fantasy painting to exclude the painted-in witch and user-interface controls. The editable player, HUD and touch controls are still rendered by the game engine. The warm-lit cottage door is aligned near the existing entrance trigger (x≈640), so walking up to the door and pressing USE should still work.
+This release restores the earlier working gameplay and replaces the failed low-resolution v0.5 exterior with a **full-frame, 1920 × 1080 WebP painted night-forest background** at `art/forest_painted_v06.webp`. The art contains only the environment (no baked-in witch, UI buttons or HUD), including a crooked warmly illuminated witch cottage at the centre, cold blue forest, moonlight, and a broad walkable clearing in the foreground. The image is displayed at the existing Godot viewport (1280 × 720, 16:9).
 
-To keep download and startup lightweight on the iPad, the first painted asset is deliberately compressed (400 × 225 pixels). This is a **visual direction prototype**, not the final full-resolution background. As a consequence, it may look somewhat soft at 1280 × 720. The v0.4 vector forest is still kept in `art/forest_v04.svg` as a backup. The interior still uses `art/interior_v04.svg`; high-resolution repainting of the interior is future work.
+The front-door interaction anchor is aligned to the painted door near x=633, y=472 in viewport coordinates. The character still moves freely on the 2.5D arena (4 directions) and jumps separately above its ground coordinates. Green spells, enemy XP, procedural idle/walk/jump motion and the USE transition to the existing cottage interior are retained. Light mist drifts over the ground. This is a **single painted exterior backdrop**; fully separate foreground/background parallax layers and hand-drawn witch animation frames are future tasks.
 
-The rest of the v0.4 mechanics have been retained: 4-direction brawler movement, separate jump height, procedural idle/walk/jump, magic against the slime, XP, and cabin entrance/exit. Subtle animated cool-colour mist has been added to the exterior foreground.
+## Controls
+- iPad: UP, DOWN, LEFT, RIGHT, JUMP, CAST, USE.
+- Keyboard: WASD/arrows, Space (jump), J (cast), E (enter/exit).
+- To enter, stand near the centre cottage's door and tap USE. Indoors, move toward the exit door and tap USE again.
 
-## iPad test
-Import the main branch from https://github.com/ZakharMig/Witch-game into Xogot, run the game, confirm the painting has loaded, test UP/DOWN/LEFT/RIGHT, JUMP, CAST, USE at the cottage door and USE again inside.
+## iPad testing
+Import or re-download `https://github.com/ZakharMig/Witch-game` from the `main` branch in Xogot. Verify that the full forest, not a magnified crop, is displayed; the witch is drawn separately at normal size; movement in both screen axes, jump and spells remain functional; and the door can be used both ways.
 
-Keyboard: WASD/arrows, Space jump, J spell, E enter/exit.
-
-Last known working v0.4: branch `backup/v0.4-working`. Any runtime compatibility issues should be reported with a screenshot.
+The last known tested state before this artwork update is saved in `backup/v0.4-before-v06`. User-side runtime testing for v0.6 is still required.
