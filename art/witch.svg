@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 420" width="280" height="420">
+<defs>
+ <linearGradient id="cape" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#b05b62"/><stop offset=".52" stop-color="#783948"/><stop offset="1" stop-color="#402334"/></linearGradient>
+ <linearGradient id="dress" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#99585e"/><stop offset="1" stop-color="#452a3b"/></linearGradient>
+ <linearGradient id="hair" x1="0" x2="1"><stop stop-color="#161b29"/><stop offset=".4" stop-color="#46303c"/><stop offset="1" stop-color="#1b1b2a"/></linearGradient>
+ <linearGradient id="skin" x1="0" x2="1"><stop stop-color="#f5c49f"/><stop offset=".7" stop-color="#bd826a"/><stop offset="1" stop-color="#8d584e"/></linearGradient>
+ <linearGradient id="leather" x1="0" x2="1"><stop stop-color="#654738"/><stop offset="1" stop-color="#2b2530"/></linearGradient>
+ <radialGradient id="orb"><stop stop-color="#eaffbe"/><stop offset=".36" stop-color="#9df68b"/><stop offset=".78" stop-color="#35ae6e"/><stop offset="1" stop-color="#126647"/></radialGradient>
+</defs>
+<g stroke="#211b29" stroke-linejoin="round" stroke-linecap="round">
+<!-- back cloak and windswept torn hems -->
+<path d="M111 143 Q65 165 54 239 L31 347 L61 332 L76 364 L96 337 L117 361 L150 331 L171 365 L176 233 L157 148Z" fill="url(#cape)" stroke-width="5"/>
+<path d="M75 188 Q48 247 51 314 L78 291 L70 341" fill="none" stroke="#ce7980" stroke-width="5"/>
+<path d="M113 162 Q145 229 136 324" fill="none" stroke="#482737" stroke-width="9"/>
+<!-- boots -->
+<path d="M102 313 L130 314 L129 386 Q132 394 148 399 L144 410 L91 409 L94 387Z" fill="url(#leather)" stroke-width="5"/>
+<path d="M147 315 L170 305 L189 384 Q201 391 213 397 L209 409 L161 409 L157 389Z" fill="url(#leather)" stroke-width="5"/>
+<path d="M94 385 Q115 393 130 382 M158 386 Q170 390 186 383" fill="none" stroke="#b67b58" stroke-width="3"/>
+<!-- legs -->
+<path d="M112 262 L145 263 L132 320 L107 324Z" fill="url(#skin)" stroke-width="4"/>
+<path d="M147 263 L177 261 L170 322 L146 328Z" fill="url(#skin)" stroke-width="4"/>
+<!-- layered skirt -->
+<path d="M109 218 L169 215 L189 298 L161 307 L139 284 L128 328 L91 311Z" fill="url(#dress)" stroke-width="5"/>
+<path d="M108 238 Q135 259 177 248" stroke="#d89c76" fill="none" stroke-width="4"/>
+<path d="M95 302 L125 315 L137 284 M166 286 L176 293" stroke="#c57c77" fill="none" stroke-width="4"/>
+<!-- right arm extended for staff -->
+<path d="M170 169 Q187 166 197 187 L220 211 L211 226 Q194 218 174 202Z" fill="#e5d1b2" stroke-width="5"/>
+<path d="M195 200 L217 211 L213 225 L193 214Z" fill="url(#leather)" stroke-width="4"/>
+<path d="M213 218 Q220 211 226 218 L230 231 L219 238 L208 229Z" fill="url(#skin)" stroke-width="4"/>
+<!-- staff behind raised hand -->
+<path d="M235 92 Q228 170 219 399" fill="none" stroke="#342a26" stroke-width="11"/>
+<path d="M235 92 Q228 170 219 399" fill="none" stroke="#987452" stroke-width="5"/>
+<path d="M232 118 Q209 111 211 89 Q220 70 231 75 M235 115 Q257 108 254 89 Q246 70 233 75" fill="none" stroke="#b18a4d" stroke-width="6"/>
+<circle cx="233" cy="91" r="20" fill="url(#orb)" stroke="#346849" stroke-width="4"/>
+<path d="M219 91 Q232 68 246 91" fill="none" stroke="#eaffc4" stroke-width="3"/>
+<!-- left arm -->
+<path d="M111 169 Q88 166 80 189 L73 238 L87 247 L102 202Z" fill="#ede0c8" stroke-width="5"/>
+<path d="M75 226 L90 231 L88 252 Q81 259 73 249Z" fill="url(#leather)" stroke-width="4"/>
+<path d="M73 248 Q83 256 91 246 L87 263 Q83 272 75 267Z" fill="url(#skin)" stroke-width="4"/>
+<!-- blouse and corset -->
+<path d="M111 150 Q140 142 166 160 L177 217 L107 225Z" fill="#efe0bf" stroke-width="5"/>
+<path d="M112 192 Q141 204 176 190 L176 249 Q141 260 106 246Z" fill="url(#leather)" stroke-width="5"/>
+<path d="M116 198 L114 239 M169 197 L167 240" fill="none" stroke="#ad815c" stroke-width="4"/>
+<path d="M107 214 Q137 226 176 211 L179 223 Q144 238 106 227Z" fill="#593d37" stroke-width="3"/>
+<path d="M132 218 L151 219 L150 228 L132 229Z" fill="#cc9655" stroke-width="3"/>
+<!-- neck -->
+<path d="M126 125 L153 122 L155 157 Q143 171 127 156Z" fill="url(#skin)" stroke-width="4"/>
+<!-- hair behind head -->
+<path d="M111 65 Q90 95 104 151 Q94 174 109 187 Q98 189 95 198 Q123 189 121 165 Q150 186 169 162 Q194 138 174 76Z" fill="url(#hair)" stroke-width="5"/>
+<!-- face -->
+<path d="M112 73 Q145 60 164 87 L169 109 Q157 140 138 146 Q117 138 111 118Z" fill="url(#skin)" stroke-width="5"/>
+<path d="M148 102 Q156 98 164 100" fill="none" stroke="#37252a" stroke-width="4"/>
+<path d="M118 101 Q128 96 137 100" fill="none" stroke="#37252a" stroke-width="4"/>
+<path d="M129 106 L131 108 M155 105 L157 107" stroke="#2b252d" stroke-width="5"/>
+<path d="M144 106 L141 117 L146 120" stroke="#955f52" stroke-width="2.5" fill="none"/>
+<path d="M133 128 Q144 133 154 125" fill="none" stroke="#7b4249" stroke-width="3"/>
+<path d="M113 87 Q109 115 119 135 L105 128 Q95 103 110 76Z" fill="url(#hair)" stroke-width="3"/>
+<path d="M122 82 Q147 67 172 86 Q160 74 150 61 Q124 58 112 77Z" fill="url(#hair)" stroke-width="3"/>
+<!-- earrings -->
+<circle cx="166" cy="125" r="5" fill="none" stroke="#e2b56b" stroke-width="3"/>
+<!-- witch hat -->
+<path d="M106 77 Q124 35 143 5 Q154 43 180 68 Q162 88 117 86Z" fill="#292435" stroke-width="6"/>
+<path d="M143 7 Q146 39 169 64 Q138 66 112 78" fill="none" stroke="#675064" stroke-width="5"/>
+<path d="M101 78 Q139 66 176 74 L202 90 Q163 102 99 94 L72 86Z" fill="#31273a" stroke-width="5"/>
+<path d="M110 70 Q140 67 177 72" fill="none" stroke="#a67957" stroke-width="5"/>
+<path d="M174 75 Q188 80 195 88" fill="none" stroke="#956b55" stroke-width="3"/>
+<!-- cloak collar -->
+<path d="M100 156 L117 140 L139 173 L119 182Z" fill="#713a48" stroke-width="4"/>
+<path d="M155 154 L170 145 L186 186 L160 177Z" fill="#8b4651" stroke-width="4"/>
+<!-- straps, pouch -->
+<path d="M95 242 L113 242 L116 275 L94 278Z" fill="#654638" stroke-width="4"/>
+<path d="M93 247 L117 245" stroke="#cba06a" stroke-width="3"/>
+<circle cx="104" cy="260" r="3" fill="#d6ae65" stroke="none"/>
+</g>
+</svg>
