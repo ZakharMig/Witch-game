@@ -1,6 +1,6 @@
 extends Node2D
 
-# Witch Game v0.9 — comic forest, chimney smoke and swaying foliage (Godot 4 / Xogot).
+# Witch Game v0.10 — unified comic art, transparent witch atlas and styled HUD (Godot 4 / Xogot).
 # The former witch.png asset is retained as a fallback art reference.
 const VIEW_W := 1280.0
 const VIEW_H := 720.0
@@ -18,9 +18,9 @@ const SLIME_CHASE_RANGE := 540.0
 const ENEMY_TOUCH_DAMAGE := 12
 const ENEMY_ATTACK_COOLDOWN := 1.35
 const PLAYER_INVULNERABLE_TIME := 0.75
-const WITCH_ATLAS: Texture2D = preload("res://art/witch_anim_v07.webp")
+const WITCH_ATLAS: Texture2D = preload("res://art/witch_anim_comic_v010.webp")
 const FRAME_EDGE := 320.0
-const FOREST_ART: Texture2D = preload("res://art/forest_comic_v09.webp")
+const FOREST_ART: Texture2D = preload("res://art/forest_comic_v010.webp")
 const INTERIOR_ART: Texture2D = preload("res://art/interior_v04.svg")
 const STAFF_GLOW: Texture2D = preload("res://art/staff_glow.svg")
 
@@ -251,13 +251,18 @@ func _draw() -> void:
         draw_circle(pos, 15, Color("#84f994"))
         draw_circle(pos + Vector2(-5, -5), 6, Color("#eeffd0"))
 
-    # On-screen HUD
-    draw_rect(Rect2(15, 14, 315, 105), Color(0.06, 0.11, 0.16, 0.87))
-    draw_string(font, Vector2(28, 45), "WITCH   LVL %d" % level, HORIZONTAL_ALIGNMENT_LEFT, -1, 25, Color.WHITE)
-    draw_rect(Rect2(30, 55, 226, 15), Color("#4d2938"))
-    draw_rect(Rect2(30, 55, float(hp) * 2.26, 15), Color("#d46c74"))
-    draw_string(font, Vector2(293, 69), "%d HP" % hp, HORIZONTAL_ALIGNMENT_RIGHT, -1, 16, Color.WHITE)
-    draw_string(font, Vector2(29, 100), "XP: %d   %s" % [xp, "WITCH HOME" if indoors else "DARK FOREST"], HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#dbe9e0"))
+    # Bold inked comic interface. Portrait is cropped from the real witch atlas.
+    draw_rect(Rect2(10, 13, 410, 101), Color(0.025, 0.035, 0.075, 0.84))
+    draw_rect(Rect2(11, 14, 408, 2), Color("#bd9974"))
+    draw_texture_rect_region(WITCH_ATLAS, Rect2(16, 17, 90, 91), Rect2(57, 1, 191, 146))
+    draw_rect(Rect2(105, 18, 303, 33), Color(0.035, 0.04, 0.08, 0.68))
+    draw_string(font, Vector2(119, 43), "WITCH   LVL %d" % level, HORIZONTAL_ALIGNMENT_LEFT, -1, 25, Color("#ffe0b0"))
+    draw_rect(Rect2(119, 57, 278, 18), Color("#221c31"))
+    draw_rect(Rect2(122, 60, float(hp) / 100.0 * 272.0, 12), Color("#ea4967"))
+    draw_string(font, Vector2(351, 70), "%d HP" % hp, HORIZONTAL_ALIGNMENT_RIGHT, -1, 17, Color.WHITE)
+    draw_rect(Rect2(119, 82, 278, 11), Color("#182f4a"))
+    draw_rect(Rect2(121, 84, clampf(float(xp) / maxf(50.0, float(level * 50)), 0.0, 1.0) * 273.0, 7), Color("#51aee0"))
+    draw_string(font, Vector2(119, 109), "XP %d   %s" % [xp, "HOME" if indoors else "DARK FOREST"], HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color("#d9e8ef"))
     if _near_door() and jump_height <= 0.0:
         draw_string(font, witch_position + Vector2(-80, -205), "E / USE: %s" % ("EXIT" if indoors else "ENTER"), HORIZONTAL_ALIGNMENT_LEFT, 190, 20, Color("#ffe1a2"))
     if victory_timer > 0.0 and not indoors:
@@ -266,7 +271,8 @@ func _draw() -> void:
         draw_rect(Rect2(365, 275, 552, 140), Color(0.08, 0.04, 0.09, 0.82))
         draw_string(font, Vector2(465, 335), "YOU WERE DEFEATED", HORIZONTAL_ALIGNMENT_LEFT, 400, 32, Color("#ffc8ca"))
         draw_string(font, Vector2(480, 386), "PRESS USE TO TRY AGAIN", HORIZONTAL_ALIGNMENT_LEFT, 360, 21, Color.WHITE)
-    draw_string(font, Vector2(465, 49), "WASD: move   SPACE: jump   J: cast   E: use", HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color("#ecede0"))
+    draw_rect(Rect2(530, 19, 735, 32), Color(0.025, 0.032, 0.079, 0.65))
+    draw_string(font, Vector2(548, 41), "WASD: MOVE      SPACE: JUMP      J: CAST      E: USE", HORIZONTAL_ALIGNMENT_LEFT, -1, 17, Color("#ffe5bf"))
 
     _draw_button(Vector2(160, 510), "UP", "up", 50)
     _draw_button(Vector2(160, 656), "DOWN", "down", 50)
@@ -327,29 +333,33 @@ func draw_ground_ellipse(center: Vector2, rx: float, ry: float, color: Color) ->
     draw_set_transform(Vector2.ZERO)
 
 func _draw_slime() -> void:
-    draw_ground_ellipse(slime_position + Vector2(0, 3), 43, 10, Color(0, 0, 0, 0.35))
-    # A squash-and-stretch bounce differentiates the enemy from scenery.
-    var bounce := absf(sin(slime_walk_clock)) * 10.0
-    var body_tint := Color("#f4c1e3") if slime_hit_timer > 0.0 else Color("#a84c83")
-    var centre := slime_position + Vector2(0.0, -26.0 - bounce)
-    draw_set_transform(centre, 0.0, Vector2(1.0 + bounce / 60.0, 1.0 - bounce / 85.0))
-    draw_circle(Vector2.ZERO, 31.0, body_tint)
-    draw_rect(Rect2(-30.0, -2.0, 60.0, 27.0), body_tint)
-    draw_circle(Vector2(-11.0, -8.0), 5.0, Color.WHITE)
-    draw_circle(Vector2(11.0, -8.0), 5.0, Color.WHITE)
-    draw_circle(Vector2(-10.0, -8.0), 2.2, Color("#27202d"))
-    draw_circle(Vector2(12.0, -8.0), 2.2, Color("#27202d"))
+    # Jade slime uses ink outlines and saturated comic highlights.
+    draw_ground_ellipse(slime_position + Vector2(0.0, 3.0), 47.0, 11.0, Color(0.0, 0.04, 0.09, 0.53))
+    var bounce := absf(sin(slime_walk_clock)) * 8.0
+    var jelly := Color("#afff82") if slime_hit_timer > 0.0 else Color("#449b6e")
+    var centre := slime_position + Vector2(0.0, -27.0 - bounce)
+    draw_set_transform(centre, 0.0, Vector2(1.0 + bounce / 75.0, 1.0 - bounce / 95.0))
+    draw_circle(Vector2.ZERO, 36.0, Color("#172a35"))
+    draw_circle(Vector2.ZERO, 31.5, jelly)
+    draw_rect(Rect2(-31.0, -2.0, 62.0, 26.0), jelly)
+    draw_circle(Vector2(-10.0, -10.0), 5.5, Color("#fff4a1"))
+    draw_circle(Vector2(12.0, -10.0), 5.5, Color("#fff4a1"))
+    draw_circle(Vector2(-9.0, -10.0), 2.3, Color("#172a35"))
+    draw_circle(Vector2(13.0, -10.0), 2.3, Color("#172a35"))
+    draw_arc(Vector2(-10.0, -19.0), 13.0, PI * 1.18, TAU * 0.98, 17, Color("#a4f49b"), 3.5)
     draw_set_transform(Vector2.ZERO)
-    draw_rect(Rect2(slime_position.x - 36.0, slime_position.y - 88.0 - bounce, 72.0, 7.0), Color("#4d2a37"))
-    draw_rect(Rect2(slime_position.x - 36.0, slime_position.y - 88.0 - bounce, float(slime_hp) * 24.0, 7.0), Color("#f6a1c0"))
+    draw_rect(Rect2(slime_position.x - 38.0, slime_position.y - 87.0 - bounce, 76.0, 8.0), Color("#15202c"))
+    draw_rect(Rect2(slime_position.x - 36.0, slime_position.y - 85.0 - bounce, float(slime_hp) / 3.0 * 72.0, 5.0), Color("#e66d83"))
 
 func _draw_button(center: Vector2, caption: String, control: String, radius: float) -> void:
     var active := _has_control(control)
-    var tint := Color(0.16, 0.31, 0.30, 0.86) if active else Color(0.10, 0.15, 0.21, 0.73)
+    var tint := Color(0.17, 0.18, 0.33, 0.94) if active else Color(0.025, 0.040, 0.092, 0.80)
+    draw_circle(center, radius + 3.0, Color(0.015, 0.024, 0.056, 0.83))
     draw_circle(center, radius, tint)
-    draw_arc(center, radius, 0, TAU, 40, Color("#b9c3c8"), 2.4)
+    draw_arc(center, radius - 1.0, 0.0, TAU, 40, Color("#e7c58c"), 2.8)
+    draw_arc(center, radius - 6.0, 0.0, TAU, 40, Color(0.91, 0.76, 0.49, 0.25), 1.3)
     var font := ThemeDB.fallback_font
-    draw_string(font, center + Vector2(-radius + 5, 7), caption, HORIZONTAL_ALIGNMENT_CENTER, (radius - 5) * 2, 19, Color.WHITE)
+    draw_string(font, center + Vector2(-radius + 5.0, 7.0), caption, HORIZONTAL_ALIGNMENT_CENTER, (radius - 5.0) * 2.0, 19, Color("#ffe7bf"))
 
 func _near_door() -> bool:
     var target := exit_pos if indoors else door_pos
