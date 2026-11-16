@@ -1,6 +1,6 @@
 extends Node2D
 
-# Witch Game v0.8 — responsive enemy, combat and healing (Godot 4 / Xogot).
+# Witch Game v0.9 — comic forest, chimney smoke and swaying foliage (Godot 4 / Xogot).
 # The former witch.png asset is retained as a fallback art reference.
 const VIEW_W := 1280.0
 const VIEW_H := 720.0
@@ -20,7 +20,7 @@ const ENEMY_ATTACK_COOLDOWN := 1.35
 const PLAYER_INVULNERABLE_TIME := 0.75
 const WITCH_ATLAS: Texture2D = preload("res://art/witch_anim_v07.webp")
 const FRAME_EDGE := 320.0
-const FOREST_ART: Texture2D = preload("res://art/forest_painted_v06.webp")
+const FOREST_ART: Texture2D = preload("res://art/forest_comic_v09.webp")
 const INTERIOR_ART: Texture2D = preload("res://art/interior_v04.svg")
 const STAFF_GLOW: Texture2D = preload("res://art/staff_glow.svg")
 
@@ -55,7 +55,7 @@ var jump_was_down := false
 var anim_state := "idle"
 var anim_clock := 0.0
 var cast_anim_timer := 0.0
-var door_pos := Vector2(633, 472)
+var door_pos := Vector2(623, 461)
 var exit_pos := Vector2(640, 487)
 var enter_spawn := Vector2(640, 535)
 var exit_spawn := Vector2(640, 550)
@@ -241,6 +241,10 @@ func _draw() -> void:
     if not indoors and slime_alive and slime_position.y > witch_position.y:
         _draw_slime()
 
+    # Plants are foreground objects: animated separately from the static art.
+    if not indoors:
+        _draw_swaying_plants()
+
     for spell in spells:
         var pos := Vector2(float(spell["x"]), float(spell["depth"]) - float(spell["altitude"]) - 87.0)
         draw_circle(pos, 25, Color(0.23, 0.98, 0.53, 0.27))
@@ -359,12 +363,55 @@ func _warm_glow(pos: Vector2, radius: float, alpha: float) -> void:
 # Painted SVG environment textures are imported as Godot textures.
 # Gameplay, collision/depth and door interactions remain in this script.
 func _draw_forest() -> void:
-    # Full-frame 1920x1080 painted exterior, no player or UI baked in.
+    # Clean 16:9 inked/cartoon exterior: no baked character or controls.
     draw_texture_rect(FOREST_ART, Rect2(0.0, 0.0, VIEW_W, VIEW_H), false)
-    # Subtle moving mist across the walkable foreground, not the cottage.
+    _draw_chimney_smoke()
+    # Thin cold air drifts over the path without hiding the warm window light.
     for k in range(3):
-        var drift := sin(elapsed * (0.22 + float(k) * 0.06) + float(k) * 1.8) * 25.0
-        draw_rect(Rect2(drift - 35.0, 474.0 + float(k) * 61.0, VIEW_W + 70.0, 14.0), Color(0.59, 0.72, 0.73, 0.018))
+        var drift := sin(elapsed * (0.20 + float(k) * 0.07) + float(k) * 1.9) * 22.0
+        draw_rect(Rect2(drift - 30.0, 488.0 + float(k) * 58.0, VIEW_W + 60.0, 11.0), Color(0.52, 0.68, 0.73, 0.012))
+
+func _draw_chimney_smoke() -> void:
+    # Screen-space chimney on the right-hand roof. Each puff travels up and drifts.
+    # Drawn behind actors/HUD so the background itself stays clean.
+    for i in range(11):
+        var phase := fposmod(elapsed * 0.20 + float(i) / 11.0, 1.0)
+        var px := 866.0 + phase * 34.0 + sin(phase * 8.0 + elapsed * 0.9 + float(i)) * 9.0
+        var py := 91.0 - phase * 159.0
+        var radius := 8.0 + phase * 24.0
+        var fade := sin(phase * PI) * 0.21
+        draw_circle(Vector2(px, py), radius * 1.35, Color(0.27, 0.35, 0.48, fade * 0.42))
+        draw_circle(Vector2(px - 3.0, py - 2.0), radius, Color(0.72, 0.77, 0.85, fade))
+        draw_circle(Vector2(px - 6.0, py - 5.0), radius * 0.43, Color(0.87, 0.89, 0.94, fade * 0.43))
+
+func _draw_swaying_plants() -> void:
+    # Foreground leaves are drawn after the witch, reinforcing arena depth.
+    # Clumps stay at the bottom corners so they never obscure the doorway.
+    for side in range(2):
+        var base_x := 40.0 if side == 0 else 1240.0
+        var direction := 1.0 if side == 0 else -1.0
+        for clump in range(4):
+            var foot := Vector2(base_x + direction * float(clump) * 56.0, 726.0 + float(clump % 2) * 13.0)
+            for blade in range(5):
+                var phase := elapsed * (1.15 + float(blade) * 0.12) + float(clump) * 0.9 + float(blade) * 1.3
+                var bend := sin(phase) * (5.0 + float(blade) * 1.4)
+                var height := 36.0 + float((clump + blade) % 3) * 15.0
+                var direction_x := (float(blade) - 2.0) * 10.0 + bend
+                var tip := foot + Vector2(direction_x, -height)
+                var left := foot + Vector2(-7.0, 0.0)
+                var right := foot + Vector2(7.0, 0.0)
+                var color := Color("#27434d") if blade % 2 == 0 else Color("#526657")
+                draw_colored_polygon(PackedVector2Array([left, tip, right]), color)
+                draw_line(foot, tip, Color(0.63, 0.65, 0.43, 0.24), 1.0)
+            for leaf in range(3):
+                var sway := sin(elapsed * 1.05 + float(leaf) * 0.7 + float(clump)) * 6.0
+                var dx := direction * float(leaf * 10 + 4)
+                var tip := foot + Vector2(dx + sway - 12.0, -26.0 - float(leaf) * 10.0)
+                draw_colored_polygon(PackedVector2Array([
+                    foot + Vector2(dx - 10.0, -12.0),
+                    tip,
+                    foot + Vector2(dx + 13.0, -8.0)
+                ]), Color("#683144") if leaf % 2 == 0 else Color("#873950"))
 
 func _draw_interior() -> void:
     draw_texture_rect(INTERIOR_ART, Rect2(0.0, 0.0, VIEW_W, VIEW_H), false)
