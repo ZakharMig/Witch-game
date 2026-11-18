@@ -16,3 +16,8 @@ Four-direction movement, jump height separate from ground depth, staff casts, en
 Import `https://github.com/ZakharMig/Witch-game` from `main` as a new project on iPad. Check (1) the backdrop is fully visible (not cropped), (2) witch has no light/white border, (3) walk/jump/cast frames switch, (4) smoke/plants move, (5) attack/HP and USE at the door still work.
 
 The previously user-tested v0.9 is saved in `backup/v0.9-working`. **v0.10 still requires a test in Xogot**; source files being present on GitHub is not a runtime test.
+
+
+## Version 0.11 — witch animations
+
+Three high-resolution 2048×2048 PNG atlases (4×4 cells of 512×512) replace the old displayed witch: `art/witch_idle_v011.png`, `art/witch_walk_v011.png`, and `art/witch_attack_v011.png`. Each atlas has 16 original GIF frames and transparency; the old character artwork remains in the repository as backup. The attack maintains individually timed frames, with a faster magical strike and projectile release aligned to the strike. Jump currently displays a static pose of the new witch until jump frames are supplied. Original GIFs are ~307–315 px per frame; enlarging them does not recreate detail missing from those GIFs. Open `project.godot` in Xogot after refreshing the project from GitHub.
