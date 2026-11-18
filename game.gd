@@ -1,6 +1,6 @@
 extends Node2D
 
-# Witch Game v0.10 — unified comic art, transparent witch atlas and styled HUD (Godot 4 / Xogot).
+# Witch Game v0.11 — 16-frame hand-painted PNG idle/walk/attack atlases (Godot 4 / Xogot).
 # The former witch.png asset is retained as a fallback art reference.
 const VIEW_W := 1280.0
 const VIEW_H := 720.0
@@ -18,11 +18,18 @@ const SLIME_CHASE_RANGE := 540.0
 const ENEMY_TOUCH_DAMAGE := 12
 const ENEMY_ATTACK_COOLDOWN := 1.35
 const PLAYER_INVULNERABLE_TIME := 0.75
-const WITCH_ATLAS: Texture2D = preload("res://art/witch_anim_comic_v010.webp")
-const FRAME_EDGE := 320.0
+const WITCH_IDLE_ATLAS: Texture2D = preload("res://art/witch_idle_v011.png")
+const WITCH_WALK_ATLAS: Texture2D = preload("res://art/witch_walk_v011.png")
+const WITCH_ATTACK_ATLAS: Texture2D = preload("res://art/witch_attack_v011.png")
+const FRAME_EDGE := 512.0
+const IDLE_FRAME_TIME := 0.120
+const WALK_FRAME_TIME := 0.120
+# Durations match the user's 16-frame attack GIF: the striking frames play faster.
+const ATTACK_FRAME_MS := [110, 110, 110, 110, 110, 110, 110, 40, 40, 40, 40, 110, 110, 110, 110, 110]
+const CAST_ANIM_DURATION := 1.480
+const CAST_RELEASE_TIME := 0.800
 const FOREST_ART: Texture2D = preload("res://art/forest_comic_v010.webp")
 const INTERIOR_ART: Texture2D = preload("res://art/interior_v04.svg")
-const STAFF_GLOW: Texture2D = preload("res://art/staff_glow.svg")
 
 var witch_position := Vector2(260, 550) # Ground coordinates (X, depth).
 var jump_height := 0.0
@@ -55,6 +62,7 @@ var jump_was_down := false
 var anim_state := "idle"
 var anim_clock := 0.0
 var cast_anim_timer := 0.0
+var cast_spell_pending := false
 var door_pos := Vector2(623, 461)
 var exit_pos := Vector2(640, 487)
 var enter_spawn := Vector2(640, 535)
@@ -112,6 +120,10 @@ func _process(delta: float) -> void:
     cast_cooldown = maxf(0.0, cast_cooldown - delta)
     cast_flash = maxf(0.0, cast_flash - delta)
     cast_anim_timer = maxf(0.0, cast_anim_timer - delta)
+    # Spawn the projectile at the actual hand-strike frame, not when the book first opens.
+    if cast_spell_pending and cast_anim_timer <= CAST_ANIM_DURATION - CAST_RELEASE_TIME:
+        cast_spell_pending = false
+        spells.append({"x": witch_position.x + facing * 42.0, "depth": witch_position.y, "dir": facing, "altitude": jump_height})
     player_hurt_timer = maxf(0.0, player_hurt_timer - delta)
     slime_hit_timer = maxf(0.0, slime_hit_timer - delta)
     slime_attack_timer = maxf(0.0, slime_attack_timer - delta)
@@ -182,14 +194,15 @@ func _restart_encounter() -> void:
     slime_attack_timer = 0.9
     player_hurt_timer = 0.0
     cast_anim_timer = 0.0
+    cast_spell_pending = false
     spells.clear()
     victory_timer = 0.0
 
 func _cast() -> void:
-    cast_cooldown = 0.40
+    cast_cooldown = CAST_ANIM_DURATION
     cast_flash = 0.2
-    cast_anim_timer = 0.36
-    spells.append({"x": witch_position.x + facing * 42.0, "depth": witch_position.y, "dir": facing, "altitude": jump_height})
+    cast_anim_timer = CAST_ANIM_DURATION
+    cast_spell_pending = true
 
 func _has_control(control: String) -> bool:
     if mouse_control == control:
@@ -251,10 +264,10 @@ func _draw() -> void:
         draw_circle(pos, 15, Color("#84f994"))
         draw_circle(pos + Vector2(-5, -5), 6, Color("#eeffd0"))
 
-    # Bold inked comic interface. Portrait is cropped from the real witch atlas.
+    # Bold inked comic interface. Portrait is cropped from the new idle PNG atlas.
     draw_rect(Rect2(10, 13, 410, 101), Color(0.025, 0.035, 0.075, 0.84))
     draw_rect(Rect2(11, 14, 408, 2), Color("#bd9974"))
-    draw_texture_rect_region(WITCH_ATLAS, Rect2(16, 17, 90, 91), Rect2(57, 1, 191, 146))
+    draw_texture_rect_region(WITCH_IDLE_ATLAS, Rect2(16, 17, 90, 91), Rect2(180, 10, 170, 180))
     draw_rect(Rect2(105, 18, 303, 33), Color(0.035, 0.04, 0.08, 0.68))
     draw_string(font, Vector2(119, 43), "WITCH   LVL %d" % level, HORIZONTAL_ALIGNMENT_LEFT, -1, 25, Color("#ffe0b0"))
     draw_rect(Rect2(119, 57, 278, 18), Color("#221c31"))
@@ -283,49 +296,43 @@ func _draw() -> void:
     _draw_button(Vector2(1100, 486), "RETRY" if player_defeated else "USE", "use", 46)
 
 func _draw_witch() -> void:
-    # 4x4 hand-painted keyframe atlas. Source frame = 320x320 px.
-    # Ground coordinate and airborne height remain independent.
+    # High-resolution 4x4 PNG atlases. Every animation frame is 512x512.
+    # Screen translation is ONLY the game's ground position, not the GIF's background.
     draw_ground_ellipse(witch_position + Vector2(0.0, 2.0), 46.0, 12.0, Color(0.07, 0.08, 0.11, 0.42))
-    var atlas_row := 0
-    var atlas_col := 0
+    var atlas: Texture2D = WITCH_IDLE_ATLAS
+    var frame_index := 0
     match anim_state:
         "walk":
-            atlas_row = 1
-            atlas_col = int(anim_clock * 9.0) % 4
-        "jump":
-            atlas_row = 2
-            if jump_velocity > 260.0:
-                atlas_col = 0
-            elif jump_velocity > 70.0:
-                atlas_col = 1
-            elif jump_velocity > -170.0:
-                atlas_col = 2
-            else:
-                atlas_col = 3
+            atlas = WITCH_WALK_ATLAS
+            frame_index = int(anim_clock / WALK_FRAME_TIME) % 16
         "cast":
-            atlas_row = 3
-            atlas_col = clampi(int((0.36 - cast_anim_timer) / 0.09), 0, 3)
+            atlas = WITCH_ATTACK_ATLAS
+            var remaining_ms := clampf((CAST_ANIM_DURATION - cast_anim_timer) * 1000.0, 0.0, 1479.0)
+            for i in range(ATTACK_FRAME_MS.size()):
+                var duration_ms := float(ATTACK_FRAME_MS[i])
+                if remaining_ms < duration_ms:
+                    frame_index = i
+                    break
+                remaining_ms -= duration_ms
+        "jump":
+            # Until a jump animation is drawn, reuse the SAME witch rather than
+            # suddenly switching to the old, differently dressed character.
+            frame_index = 0
         _:
-            atlas_row = 0
-            atlas_col = int(anim_clock * 3.5) % 4
+            frame_index = int(anim_clock / IDLE_FRAME_TIME) % 16
+
     var screen_pos := witch_position + Vector2(0.0, -jump_height)
     if player_hurt_timer > 0.0 and int(elapsed * 18.0) % 2 == 0:
         return
     var sprite_size := Vector2(232.0, 224.0)
+    var atlas_col := frame_index % 4
+    var atlas_row := int(frame_index / 4)
     var source_rect := Rect2(float(atlas_col) * FRAME_EDGE, float(atlas_row) * FRAME_EDGE, FRAME_EDGE, FRAME_EDGE)
     draw_set_transform(screen_pos, 0.0, Vector2(float(facing), 1.0))
-    draw_texture_rect_region(WITCH_ATLAS, Rect2(-sprite_size.x * 0.5, -sprite_size.y, sprite_size.x, sprite_size.y), source_rect)
+    draw_texture_rect_region(atlas, Rect2(-sprite_size.x * 0.5, -sprite_size.y, sprite_size.x, sprite_size.y), source_rect)
     draw_set_transform(Vector2.ZERO)
-
-    # The warm moving staff light follows the pose (front of the character).
-    var orb_offset := Vector2(float(facing) * 35.0, -163.0)
-    if anim_state == "cast" and atlas_col >= 1:
-        orb_offset = Vector2(float(facing) * 71.0, -151.0)
-    var light_pos := screen_pos + orb_offset
-    var light_radius := 92.0 + sin(elapsed * 4.2) * 4.0
-    draw_texture_rect(STAFF_GLOW, Rect2(light_pos - Vector2.ONE * light_radius, Vector2.ONE * light_radius * 2.0), false)
-    if cast_flash > 0.0:
-        draw_arc(light_pos, 22.0, 0.0, TAU, 30, Color("#afff91"), 4.0)
+    # The gold magical light is already painted into the attack frames.
+    # The old green staff-glow would obscure the chained grimoire.
 
 func draw_ground_ellipse(center: Vector2, rx: float, ry: float, color: Color) -> void:
     draw_set_transform(center, 0, Vector2(rx / ry, 1.0))
